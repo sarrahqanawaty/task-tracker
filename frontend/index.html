@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Tracker</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0 0 0.25rem 0;
+        }
+
+        header .subtitle {
+            margin: 0 0 0.75rem 0;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        button {
+            font-family: inherit;
+            font-size: 0.95rem;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:focus-visible {
+            outline: 3px solid #1b5e20;
+            outline-offset: 2px;
+        }
+
+        .btn-primary {
+            background-color: #2e7d32;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #ddd;
+            color: #333;
+        }
+
+        .btn-danger {
+            background-color: #c62828;
+            color: white;
+        }
+
+        /* ---------- Board ---------- */
+
+        .task-board {
+            display: flex;
+            justify-content: space-around;
+            gap: 1rem;
+            padding: 2rem;
+            align-items: flex-start;
+        }
+
+        .task-column {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 30%;
+            padding: 1rem;
+            min-height: 120px;
+            border: 2px dashed transparent;
+        }
+
+        /* Drop-target highlight while a card is dragged over the column. */
+        .task-column.drag-over {
+            border-color: #4CAF50;
+            background-color: #f1f8e9;
+        }
+
+        .task-column h2 {
+            text-align: center;
+            font-size: 1.1rem;
+            margin-top: 0;
+        }
+
+        .count {
+            color: #777;
+            font-weight: normal;
+        }
+
+        .task {
+            background-color: #e0e0e0;
+            border-radius: 3px;
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            cursor: grab;
+        }
+
+        .task:hover {
+            background-color: #d5d5d5;
+        }
+
+        .task.dragging {
+            opacity: 0.5;
+        }
+
+        .task-title {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .task-description {
+            font-size: 0.8rem;
+            color: #444;
+            margin-bottom: 0.25rem;
+        }
+
+        .task-meta {
+            font-size: 0.8rem;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .task-meta .edit-btn {
+            margin-left: auto;
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 0.1rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            color: white;
+        }
+
+        .pill-High   { background-color: #c62828; }
+        .pill-Medium { background-color: #ef6c00; }
+        .pill-Low    { background-color: #558b2f; }
+
+        .empty-state {
+            color: #999;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        /* ---------- Board-level states (loading / error) ---------- */
+
+        .board-status {
+            display: none;
+            margin: 1rem 2rem 0 2rem;
+            padding: 0.75rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .board-status.show {
+            display: block;
+        }
+
+        .board-status.loading {
+            background-color: #e3f2fd;
+            color: #0d47a1;
+            border: 1px solid #90caf9;
+        }
+
+        .board-status.error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+
+        .board-status button {
+            margin-left: 0.75rem;
+            font-size: 0.8rem;
+            padding: 0.25rem 0.75rem;
+        }
+
+        /* ---------- Modal ---------- */
+
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background-color: white;
+            border-radius: 5px;
+            padding: 1.5rem;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .modal h2 {
+            margin-top: 0;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-close {
+            background: none;
+            color: #666;
+            font-size: 1.3rem;
+            line-height: 1;
+            padding: 0.2rem 0.5rem;
+        }
+
+        .modal label {
+            display: block;
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+            color: #444;
+        }
+
+        .modal input,
+        .modal textarea,
+        .modal select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.5rem;
+            margin-top: 0.25rem;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+        }
+
+        .error {
+            display: none;
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+            border-radius: 3px;
+            padding: 0.5rem;
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .error.show {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Task Board</h1>
+        <p class="subtitle">Drag a card to change its status. Click Edit to change its details.</p>
+        <button class="btn-primary" onclick="openCreateModal()">+ New Task</button>
+    </header>
+
+    <!-- Board-level states: loading and error (Prompt B3) -->
+    <div id="boardLoading" class="board-status loading" role="status" aria-live="polite">Loading tasks…</div>
+    <div id="loadError" class="board-status error" role="alert"></div>
+
+    <div class="task-board">
+        <div class="task-column" data-status="ToDo">
+            <h2>To Do <span class="count" id="count-ToDo"></span></h2>
+            <div id="col-ToDo"></div>
+        </div>
+        <div class="task-column" data-status="InProgress">
+            <h2>In Progress <span class="count" id="count-InProgress"></span></h2>
+            <div id="col-InProgress"></div>
+        </div>
+        <div class="task-column" data-status="Done">
+            <h2>Done <span class="count" id="count-Done"></span></h2>
+            <div id="col-Done"></div>
+        </div>
+    </div>
+
+    <!-- Create / Edit modal -->
+    <div class="modal-backdrop" id="modalBackdrop">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="modal-header">
+                <h2 id="modalTitle">New Task</h2>
+                <button class="modal-close" id="modalCloseBtn" aria-label="Close" onclick="closeModal()">&times;</button>
+            </div>
+
+            <label for="fTitle">Title *</label>
+            <input type="text" id="fTitle" maxlength="200">
+
+            <label for="fDescription">Description</label>
+            <textarea id="fDescription" rows="3"></textarea>
+
+            <label for="fStatus">Status</label>
+            <select id="fStatus">
+                <option value="ToDo">ToDo</option>
+                <option value="InProgress">InProgress</option>
+                <option value="Done">Done</option>
+            </select>
+
+            <label for="fPriority">Priority</label>
+            <select id="fPriority">
+                <option value="Low">Low</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="High">High</option>
+            </select>
+
+            <label for="fAssignee">Assignee</label>
+            <input type="text" id="fAssignee">
+
+            <!-- MID-COURSE PROJECT: add new feature fields here (e.g. due date, tags) -->
+
+            <div id="modalError" class="error"></div>
+
+            <div class="modal-actions">
+                <button class="btn-danger" id="deleteBtn" onclick="deleteTask()">Delete</button>
+                <div>
+                    <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button class="btn-primary" onclick="saveTask()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ---------------------------------------------------------------
+        // Config
+        // ---------------------------------------------------------------
+        const API = "http://localhost:8000";
+        const STATUSES = ["ToDo", "InProgress", "Done"];
+        const PRIORITY_ORDER = { High: 0, Medium: 1, Low: 2 };
+
+        // id of the task currently open in the modal; null means "create mode"
+        let editingId = null;
+        let tasks = [];
+
+        // ---------------------------------------------------------------
+        // Load and render — four UI states: loading, ready, empty, error
+        // ---------------------------------------------------------------
+        async function fetchTasks() {
+            hide("loadError");
+            show("boardLoading", "Loading tasks…");
+            try {
+                const res = await fetch(API + "/tasks");
+                if (!res.ok) throw new Error("GET /tasks returned " + res.status);
+                tasks = await res.json();
+                hide("boardLoading");
+                renderBoard(tasks);          // ready, or empty when the list is []
+            } catch (err) {
+                hide("boardLoading");
+                renderBoard([]);             // keep the three columns visible
+                showBoardError(
+                    "Could not reach the API at " + API + ". " +
+                    "Is uvicorn running, and is CORS enabled in app/main.py? (" + err.message + ")",
+                    { withRetry: true });
+            }
+        }
+
+        async function loadTasks() {
+            await fetchTasks();
+        }
+
+        // Board-level error. A failed load offers Retry; a rejected drag does
+        // not — there the board is already correct after the rollback.
+        function showBoardError(message, { withRetry = false } = {}) {
+            const el = document.getElementById("loadError");
+            el.textContent = message;
+
+            if (withRetry) {
+                const retry = document.createElement("button");
+                retry.className = "btn-secondary";
+                retry.textContent = "Retry";
+                retry.onclick = fetchTasks;
+                el.appendChild(retry);
+            }
+
+            el.classList.add("show");
+        }
+
+        // High -> Medium -> Low; ties break by created_at, then by id.
+        // (Ids are UUID strings, so numeric comparison would produce NaN.)
+        function compareTasks(a, b) {
+            const priorityDelta = (PRIORITY_ORDER[a.priority] ?? Number.MAX_SAFE_INTEGER)
+                - (PRIORITY_ORDER[b.priority] ?? Number.MAX_SAFE_INTEGER);
+            if (priorityDelta !== 0) return priorityDelta;
+
+            const createdDelta = String(a.created_at ?? "").localeCompare(String(b.created_at ?? ""));
+            if (createdDelta !== 0) return createdDelta;
+
+            return String(a.id).localeCompare(String(b.id));
+        }
+
+        function renderBoard(taskList) {
+            const grouped = Object.fromEntries(STATUSES.map(status => [status, []]));
+
+            for (const task of taskList) {
+                if (grouped[task.status]) {
+                    grouped[task.status].push(task);
+                }
+            }
+
+            for (const status of STATUSES) {
+                const column = document.getElementById("col-" + status);
+                const inColumn = grouped[status].sort(compareTasks);
+
+                document.getElementById("count-" + status).textContent = "(" + inColumn.length + ")";
+
+                // Empty columns stay visible — they are still drop targets.
+                if (inColumn.length === 0) {
+                    column.innerHTML = '<div class="empty-state">No tasks</div>';
+                    continue;
+                }
+
+                column.innerHTML = "";
+                for (const task of inColumn) {
+                    column.appendChild(buildCard(task));
+                }
+            }
+        }
+
+        function render(tasksToRender) {
+            renderBoard(tasksToRender);
+        }
+
+        function buildCard(task) {
+            const card = document.createElement("div");
+            card.className = "task";
+            card.dataset.id = task.id;
+            card.dataset.status = task.status;
+            card.draggable = true;
+            card.onclick = () => openEditModal(task);
+            card.addEventListener("dragstart", onCardDragStart);
+            card.addEventListener("dragend", onCardDragEnd);
+
+            const title = document.createElement("div");
+            title.className = "task-title";
+            title.textContent = task.title;
+            card.appendChild(title);
+
+            if (task.description) {
+                const description = document.createElement("div");
+                description.className = "task-description";
+                description.textContent = task.description;
+                card.appendChild(description);
+            }
+
+            const meta = document.createElement("div");
+            meta.className = "task-meta";
+
+            const pill = document.createElement("span");
+            pill.className = "pill pill-" + task.priority;
+            pill.textContent = task.priority;
+            meta.appendChild(pill);
+
+            meta.appendChild(document.createTextNode(task.assignee || "Unassigned"));
+
+            const editBtn = document.createElement("button");
+            editBtn.className = "btn-secondary edit-btn";
+            editBtn.textContent = "Edit";
+            editBtn.onclick = event => {
+                event.stopPropagation();     // the card click also opens the modal
+                openEditModal(task);
+            };
+            meta.appendChild(editBtn);
+
+            // MID-COURSE PROJECT: render new feature info here (e.g. overdue pill, tag chips)
+
+            card.appendChild(meta);
+            return card;
+        }
+
+        // ---------------------------------------------------------------
+        // Drag and drop — native HTML5 API, optimistic update + rollback
+        // ---------------------------------------------------------------
+        function onCardDragStart(event) {
+            const card = event.currentTarget;
+            event.dataTransfer.setData("text/plain", card.dataset.id);
+            event.dataTransfer.effectAllowed = "move";
+            card.classList.add("dragging");
+        }
+
+        function onCardDragEnd(event) {
+            event.currentTarget.classList.remove("dragging");
+        }
+
+        function wireColumnDropTargets() {
+            for (const column of document.querySelectorAll(".task-column")) {
+                column.addEventListener("dragover", event => {
+                    event.preventDefault();          // required to allow a drop
+                    event.dataTransfer.dropEffect = "move";
+                    column.classList.add("drag-over");
+                });
+
+                column.addEventListener("dragleave", () => column.classList.remove("drag-over"));
+
+                column.addEventListener("drop", event => {
+                    event.preventDefault();
+                    column.classList.remove("drag-over");
+                    const taskId = event.dataTransfer.getData("text/plain");
+                    moveTask(taskId, column.dataset.status);
+                });
+            }
+        }
+
+        async function moveTask(taskId, targetStatus) {
+            const task = tasks.find(candidate => candidate.id === taskId);
+            if (!task) return;
+
+            const previousStatus = task.status;
+            if (previousStatus === targetStatus) return;   // same column: no PATCH
+
+            // Optimistic update: move locally first so the board feels responsive.
+            hide("loadError");
+            task.status = targetStatus;
+            renderBoard(tasks);
+
+            try {
+                const res = await fetch(API + "/tasks/" + taskId, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ status: targetStatus })
+                });
+
+                if (!res.ok) {
+                    // Server rejected the move (422 invalid transition, 404, ...):
+                    // roll the card back and show what the server said.
+                    task.status = previousStatus;
+                    renderBoard(tasks);
+                    showBoardError(await readError(res));
+                    return;
+                }
+
+                const updated = await res.json();
+                Object.assign(task, updated);
+                renderBoard(tasks);
+            } catch (err) {
+                task.status = previousStatus;
+                renderBoard(tasks);
+                showBoardError("Could not save the move: " + err.message +
+                    ". The card was returned to " + previousStatus + ".");
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // Modal
+        // ---------------------------------------------------------------
+        function openCreateModal() {
+            editingId = null;
+            document.getElementById("modalTitle").textContent = "New Task";
+            document.getElementById("deleteBtn").style.display = "none";
+
+            setField("fTitle", "");
+            setField("fDescription", "");
+            setField("fStatus", "ToDo");
+            setField("fPriority", "Medium");
+            setField("fAssignee", "");
+
+            hide("modalError");
+            document.getElementById("modalBackdrop").classList.add("open");
+            document.getElementById("fTitle").focus();
+        }
+
+        function openEditModal(task) {
+            editingId = task.id;
+            document.getElementById("modalTitle").textContent = "Edit Task";
+            document.getElementById("deleteBtn").style.display = "inline-block";
+
+            setField("fTitle", task.title);
+            setField("fDescription", task.description || "");
+            setField("fStatus", task.status);
+            setField("fPriority", task.priority);
+            setField("fAssignee", task.assignee || "");
+
+            hide("modalError");
+            document.getElementById("modalBackdrop").classList.add("open");
+            document.getElementById("fTitle").focus();
+        }
+
+        function isModalOpen() {
+            return document.getElementById("modalBackdrop").classList.contains("open");
+        }
+
+        function closeModal() {
+            document.getElementById("modalBackdrop").classList.remove("open");
+            hide("modalError");
+            editingId = null;
+        }
+
+        // ---------------------------------------------------------------
+        // Save (POST for new, PATCH for existing)
+        // ---------------------------------------------------------------
+        async function saveTask() {
+            hide("modalError");
+
+            const payload = {
+                title: getField("fTitle").trim(),
+                description: getField("fDescription"),
+                status: getField("fStatus"),
+                priority: getField("fPriority"),
+                assignee: getField("fAssignee").trim() || null
+            };
+
+            // Client-side check: never send a blank title to the server.
+            if (!payload.title) {
+                show("modalError", "Title is required.");
+                return;
+            }
+
+            const isNew = editingId === null;
+            const url = isNew ? API + "/tasks" : API + "/tasks/" + editingId;
+            const method = isNew ? "POST" : "PATCH";
+
+            // PATCH rejects a same-to-same status transition with 422, so an edit
+            // that did not change the status must not send the status field.
+            if (!isNew) {
+                const current = tasks.find(candidate => candidate.id === editingId);
+                if (current && current.status === payload.status) {
+                    delete payload.status;
+                }
+            }
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    // 422 and friends: keep the modal open and show the server message.
+                    show("modalError", await readError(res));
+                    return;
+                }
+
+                closeModal();
+                loadTasks();
+            } catch (err) {
+                show("modalError", "Request failed: " + err.message);
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // Delete
+        // ---------------------------------------------------------------
+        async function deleteTask() {
+            if (editingId === null) return;
+            hide("modalError");
+
+            try {
+                const res = await fetch(API + "/tasks/" + editingId, { method: "DELETE" });
+
+                // DELETE returns 204 with an empty body — do NOT call res.json() here
+                if (res.status !== 204) {
+                    show("modalError", await readError(res));
+                    return;
+                }
+
+                closeModal();
+                loadTasks();
+            } catch (err) {
+                show("modalError", "Request failed: " + err.message);
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // Helpers
+        // ---------------------------------------------------------------
+
+        // Turns a FastAPI error response into one readable line.
+        // 422 bodies look like: {"detail": [{"loc": [...], "msg": "..."}]}
+        // 404 / 422-from-HTTPException look like: {"detail": "Task with id ... not found"}
+        async function readError(res) {
+            let body;
+            try {
+                body = await res.json();
+            } catch {
+                return "HTTP " + res.status;
+            }
+
+            const detail = body.detail;
+
+            if (typeof detail === "string") {
+                return detail;
+            }
+            if (Array.isArray(detail)) {
+                return detail.map(d => (d.loc ? d.loc.slice(1).join(".") + ": " : "") + d.msg).join(" | ");
+            }
+            return "HTTP " + res.status;
+        }
+
+        function getField(id) {
+            return document.getElementById(id).value;
+        }
+
+        function setField(id, value) {
+            document.getElementById(id).value = value;
+        }
+
+        function show(id, message) {
+            const el = document.getElementById(id);
+            el.textContent = message;
+            el.classList.add("show");
+        }
+
+        function hide(id) {
+            document.getElementById(id).classList.remove("show");
+        }
+
+        // Close the modal with Escape
+        document.addEventListener("keydown", e => {
+            if (e.key === "Escape" && isModalOpen()) closeModal();
+        });
+
+        // Close the modal by clicking the overlay (but not the dialog itself)
+        document.getElementById("modalBackdrop").addEventListener("click", event => {
+            if (event.target.id === "modalBackdrop") closeModal();
+        });
+
+        // Initial load
+        wireColumnDropTargets();
+        loadTasks();
+    </script>
+</body>
+</html>
