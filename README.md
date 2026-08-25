@@ -1,8 +1,15 @@
 # Task Tracker API
 
-A minimal REST API for tracking tasks. This repository currently contains
-the project skeleton only: a FastAPI application instance and a `/health`
-endpoint.
+A minimal REST API for tracking tasks, with a vanilla-JavaScript Kanban board
+in front of it. Built across Modules 1-3 of the AI-Assisted Coding course and
+extended in the mid-course project.
+
+**Branches**
+
+| Branch | Contents |
+|---|---|
+| `main` | The Modules 1-3 baseline: CRUD API, status-transition rules, Kanban board, 24 tests. |
+| `mid-course-project` | The baseline plus two new features (below) and 20 more tests. **This is the branch to review.** |
 
 ## Tech stack
 
@@ -19,8 +26,9 @@ task-tracker/
 ├── app/
 │   ├── main.py          # FastAPI app instance, CORS, and routes
 │   ├── models.py        # Enums and the three Pydantic models
-│   ├── storage.py       # In-memory task store
-│   └── business_rules.py # Status transition rules
+│   ├── storage.py       # In-memory task store and the query filters
+│   ├── business_rules.py # Status transition rules
+│   └── due_dates.py     # Overdue rule (mid-course Feature 1)
 ├── backend/
 │   ├── main.py          # Thin re-export of app.main:app
 │   └── data/            # Location of the SQLite file (tasks.db), added later
@@ -28,6 +36,7 @@ task-tracker/
 │   └── index.html       # Kanban board — vanilla HTML, CSS and JavaScript
 ├── tests/               # pytest suite
 ├── docs/                # Module deliverables and verification records
+│   └── midcourse/       # Mid-course project documentation
 ├── requirements.txt     # Direct dependencies, pinned
 ├── requirements.lock.txt # Full resolved tree from `pip freeze`
 ├── .env.example
@@ -138,6 +147,45 @@ drag-and-drop that PATCHes the API and rolls the card back when the server
 rejects the transition, and a create/edit modal with title trimming and visible
 server validation messages.
 
+## Mid-course project features
+
+Two features were added on the `mid-course-project` branch. Both are usable from
+the board.
+
+### Feature 1 — Due dates and overdue tasks
+
+Every task takes an optional `due_date` (an ISO `YYYY-MM-DD` date). The API
+returns a derived `is_overdue` flag, and the card shows a red **Overdue** pill
+for a late task or a neutral **Due** pill otherwise.
+
+A task counts as overdue when it has a due date, that date is strictly in the
+past, and its status is not `Done`. The rule lives in `app/due_dates.py` and is
+recomputed on every read, so a task becomes overdue on its own as the date
+passes. Filter the board to late work with the **Overdue only** checkbox, or the
+API directly:
+
+```
+curl "http://127.0.0.1:8000/tasks?overdue=true"
+```
+
+### Feature 2 — Search and combined filters
+
+`GET /tasks` accepts `search`, `assignee`, `overdue`, `status` and `priority`.
+They combine with AND, and any parameter left out is not applied. `search` is a
+case-insensitive substring match on title and description; a blank or
+whitespace-only value means *no filter*, never *match nothing*.
+
+```
+curl "http://127.0.0.1:8000/tasks?search=invoice&assignee=Sarah&overdue=true"
+```
+
+The filter bar above the board drives the same parameters. Filtering happens on
+the server, so the column counts always match what the API returned.
+
+Documentation for this work is in [`docs/midcourse/`](docs/midcourse/):
+user stories, the mini-ADR, the prompt log, verification evidence, and a
+reflection.
+
 ## Interactive API documentation
 
 FastAPI generates documentation automatically:
@@ -152,11 +200,25 @@ FastAPI generates documentation automatically:
 python -m pytest -q
 ```
 
-24 passing. The suite covers the CRUD routes, the status-transition rules, and
-the PATCH edge cases the board depends on.
+**44 passing** on `mid-course-project` (24 from Modules 1-3, 20 added by the
+mid-course project). The suite covers the CRUD routes, the status-transition
+rules, the PATCH edge cases the board depends on, the due-date and overdue
+rules, and every filter combination.
+
+Run one group at a time with `-k`:
+
+```
+python -m pytest -q -k "overdue"
+python -m pytest -q -k "transition"
+```
 
 ## Scope
 
-Intentionally **not** included at this stage: database implementation,
-authentication, a build step or frontend framework, Docker, and deployment.
-Tasks live in memory and are lost when the server restarts.
+Intentionally **not** included: database implementation, authentication, a build
+step or frontend framework, Docker, and deployment. Tasks live in memory and are
+lost when the server restarts.
+
+Also deliberately out of scope for the mid-course features: recurring due dates,
+reminders and notifications, saved filter presets, sorting by due date, bulk
+edits, and persisting filter state in the URL. The reasoning is in
+[`docs/midcourse/mini-adr.md`](docs/midcourse/mini-adr.md).
