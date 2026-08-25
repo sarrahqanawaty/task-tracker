@@ -65,7 +65,7 @@
             display: flex;
             justify-content: space-around;
             gap: 1rem;
-            padding: 2rem;
+            padding: 1rem 2rem 2rem;
             align-items: flex-start;
         }
 
@@ -273,6 +273,19 @@
         .error.show {
             display: block;
         }
+
+        /* ---- MID-COURSE PROJECT ---- */
+        /* Feature 2: filter bar above the board */
+        .filter-bar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: 1.25rem 2rem 0; }
+        .filter-bar input, .filter-bar select {
+            padding: .45rem .6rem; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit;
+        }
+        .filter-bar #fSearch { flex: 1 1 240px; min-width: 180px; }
+        .filter-bar label.check { display: flex; align-items: center; gap: .35rem; font-size: .9rem; }
+        .filter-summary { font-size: .85rem; opacity: .7; padding: .5rem 2rem 0; margin: 0; min-height: 1.2em; }
+        /* Feature 1: due-date pills on the cards */
+        .pill-due { background: #e2e8f0; color: #1e293b; }
+        .pill-overdue { background: #fee2e2; color: #991b1b; font-weight: 600; }
     </style>
 </head>
 
@@ -286,6 +299,22 @@
     <!-- Board-level states: loading and error (Prompt B3) -->
     <div id="boardLoading" class="board-status loading" role="status" aria-live="polite">Loading tasks…</div>
     <div id="loadError" class="board-status error" role="alert"></div>
+
+    <!-- MID-COURSE FEATURE 2: search + combined filters. Filtering is done by the
+         API (GET /tasks?search=&priority=&assignee=&overdue=), not in the browser. -->
+    <div class="filter-bar">
+        <input type="search" id="fSearch" placeholder="Search title or description…" aria-label="Search tasks">
+        <select id="fFilterPriority" aria-label="Filter by priority">
+            <option value="">All priorities</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+        </select>
+        <input type="text" id="fFilterAssignee" placeholder="Assignee" aria-label="Filter by assignee">
+        <label class="check"><input type="checkbox" id="fFilterOverdue"> Overdue only</label>
+        <button class="btn-secondary" onclick="clearFilters()">Clear</button>
+    </div>
+    <p class="filter-summary" id="filterSummary"></p>
 
     <div class="task-board">
         <div class="task-column" data-status="ToDo">
@@ -333,7 +362,10 @@
             <label for="fAssignee">Assignee</label>
             <input type="text" id="fAssignee">
 
-            <!-- MID-COURSE PROJECT: add new feature fields here (e.g. due date, tags) -->
+            <!-- MID-COURSE FEATURE 1: due date. type="date" gives the browser's own
+                 picker and always submits the ISO YYYY-MM-DD the API expects. -->
+            <label for="fDueDate">Due date</label>
+            <input type="date" id="fDueDate">
 
             <div id="modalError" class="error"></div>
 
@@ -364,9 +396,10 @@
         // ---------------------------------------------------------------
         async function fetchTasks() {
             hide("loadError");
+            renderFilterSummary();
             show("boardLoading", "Loading tasks…");
             try {
-                const res = await fetch(API + "/tasks");
+                const res = await fetch(API + "/tasks" + buildFilterQuery());
                 if (!res.ok) throw new Error("GET /tasks returned " + res.status);
                 tasks = await res.json();
                 hide("boardLoading");
@@ -383,6 +416,64 @@
 
         async function loadTasks() {
             await fetchTasks();
+        }
+
+        // ---------------------------------------------------------------
+        // MID-COURSE FEATURE 2: search + combined filters
+        // Every active control becomes one query parameter. An empty control is
+        // left out entirely, so "no filter" and "match nothing" stay different.
+        // ---------------------------------------------------------------
+        function readFilters() {
+            return {
+                search: getField("fSearch").trim(),
+                priority: getField("fFilterPriority"),
+                assignee: getField("fFilterAssignee").trim(),
+                overdue: document.getElementById("fFilterOverdue").checked
+            };
+        }
+
+        function buildFilterQuery() {
+            const filters = readFilters();
+            const params = new URLSearchParams();
+            if (filters.search) params.set("search", filters.search);
+            if (filters.priority) params.set("priority", filters.priority);
+            if (filters.assignee) params.set("assignee", filters.assignee);
+            if (filters.overdue) params.set("overdue", "true");
+            const query = params.toString();
+            return query ? "?" + query : "";
+        }
+
+        function renderFilterSummary() {
+            const filters = readFilters();
+            const active = [];
+            if (filters.search) active.push('search "' + filters.search + '"');
+            if (filters.priority) active.push("priority " + filters.priority);
+            if (filters.assignee) active.push("assignee " + filters.assignee);
+            if (filters.overdue) active.push("overdue only");
+            document.getElementById("filterSummary").textContent =
+                active.length ? "Filtered by " + active.join(" + ") + "." : "";
+        }
+
+        function clearFilters() {
+            setField("fSearch", "");
+            setField("fFilterPriority", "");
+            setField("fFilterAssignee", "");
+            document.getElementById("fFilterOverdue").checked = false;
+            loadTasks();
+        }
+
+        // Typing sends one request after a short pause instead of one per keystroke.
+        let searchTimer = null;
+        function onFilterInput() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(loadTasks, 250);
+        }
+
+        function wireFilterControls() {
+            document.getElementById("fSearch").addEventListener("input", onFilterInput);
+            document.getElementById("fFilterAssignee").addEventListener("input", onFilterInput);
+            document.getElementById("fFilterPriority").addEventListener("change", loadTasks);
+            document.getElementById("fFilterOverdue").addEventListener("change", loadTasks);
         }
 
         // Board-level error. A failed load offers Retry; a rejected drag does
@@ -432,7 +523,8 @@
 
                 // Empty columns stay visible — they are still drop targets.
                 if (inColumn.length === 0) {
-                    column.innerHTML = '<div class="empty-state">No tasks</div>';
+                    column.innerHTML = '<div class="empty-state">' +
+                        (buildFilterQuery() ? "No matching tasks" : "No tasks") + "</div>";
                     continue;
                 }
 
@@ -477,6 +569,15 @@
             pill.textContent = task.priority;
             meta.appendChild(pill);
 
+            // MID-COURSE FEATURE 1: the backend decides what "overdue" means and
+            // sends is_overdue; the card only renders the answer.
+            if (task.due_date) {
+                const duePill = document.createElement("span");
+                duePill.className = task.is_overdue ? "pill pill-overdue" : "pill pill-due";
+                duePill.textContent = (task.is_overdue ? "Overdue " : "Due ") + task.due_date;
+                meta.appendChild(duePill);
+            }
+
             meta.appendChild(document.createTextNode(task.assignee || "Unassigned"));
 
             const editBtn = document.createElement("button");
@@ -488,7 +589,6 @@
             };
             meta.appendChild(editBtn);
 
-            // MID-COURSE PROJECT: render new feature info here (e.g. overdue pill, tag chips)
 
             card.appendChild(meta);
             return card;
@@ -558,6 +658,9 @@
                 const updated = await res.json();
                 Object.assign(task, updated);
                 renderBoard(tasks);
+                // With a filter active the moved task may no longer match it
+                // (e.g. "Overdue only" + a move to Done), so re-ask the API.
+                if (buildFilterQuery()) loadTasks();
             } catch (err) {
                 task.status = previousStatus;
                 renderBoard(tasks);
@@ -579,6 +682,7 @@
             setField("fStatus", "ToDo");
             setField("fPriority", "Medium");
             setField("fAssignee", "");
+            setField("fDueDate", "");
 
             hide("modalError");
             document.getElementById("modalBackdrop").classList.add("open");
@@ -595,6 +699,7 @@
             setField("fStatus", task.status);
             setField("fPriority", task.priority);
             setField("fAssignee", task.assignee || "");
+            setField("fDueDate", task.due_date || "");
 
             hide("modalError");
             document.getElementById("modalBackdrop").classList.add("open");
@@ -622,7 +727,9 @@
                 description: getField("fDescription"),
                 status: getField("fStatus"),
                 priority: getField("fPriority"),
-                assignee: getField("fAssignee").trim() || null
+                assignee: getField("fAssignee").trim() || null,
+                // An empty date input sends null, which clears the date server-side.
+                due_date: getField("fDueDate") || null
             };
 
             // Client-side check: never send a blank title to the server.
@@ -743,6 +850,7 @@
 
         // Initial load
         wireColumnDropTargets();
+        wireFilterControls();
         loadTasks();
     </script>
 </body>

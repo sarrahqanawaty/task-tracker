@@ -122,11 +122,16 @@ def test_patch_done_to_todo_returns_422(client, created_task):
 
 
 def test_patch_unknown_field_returns_422(client, created_task):
-    response = client.patch(f"/tasks/{created_task['id']}", json={"due_date": "2026-01-01"})
+    # Mid-course update: this test used "due_date" as its example of a field the
+    # API does not know about. Feature 1 made due_date a real, accepted field, so
+    # the example was swapped for one that is still genuinely unknown. The intent
+    # ("extra=forbid rejects unknown fields with 422") and the assertion are
+    # unchanged — only the sample field name moved.
+    response = client.patch(f"/tasks/{created_task['id']}", json={"estimated_hours": 3})
 
     assert response.status_code == 422
     body = response.json()
-    assert any("due_date" in str(error.get("loc", "")) for error in body["detail"])
+    assert any("estimated_hours" in str(error.get("loc", "")) for error in body["detail"])
 
 
 def test_patch_invalid_status_value_returns_422(client, created_task):

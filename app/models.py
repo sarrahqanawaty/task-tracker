@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 from typing import Optional
 
@@ -34,6 +34,10 @@ class TaskCreate(BaseModel):
     status: TaskStatus = TaskStatus.TODO
     priority: TaskPriority = TaskPriority.MEDIUM
     assignee: Optional[str] = None
+    # Mid-course Feature 1. Optional, so every task created before this change
+    # is still valid. Pydantic parses an ISO "YYYY-MM-DD" string and rejects
+    # anything else with 422 — no hand-written date parsing needed.
+    due_date: Optional[date] = None
 
     @field_validator("title")
     @classmethod
@@ -49,6 +53,10 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
     assignee: Optional[str] = None
+    # Sending `"due_date": null` explicitly clears the date; leaving the key out
+    # of the body leaves it untouched. That difference is what `exclude_unset`
+    # in storage.update_task preserves.
+    due_date: Optional[date] = None
 
     @field_validator("title")
     @classmethod
@@ -67,5 +75,9 @@ class TaskResponse(BaseModel):
     status: TaskStatus
     priority: TaskPriority
     assignee: Optional[str] = None
+    due_date: Optional[date] = None
+    # Derived, never sent by the client: the storage layer recomputes it on
+    # every read so it can never go stale as the calendar moves forward.
+    is_overdue: bool = False
     created_at: datetime
     updated_at: datetime

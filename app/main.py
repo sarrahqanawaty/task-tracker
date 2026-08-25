@@ -8,7 +8,7 @@ import os
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from typing import Optional
@@ -27,7 +27,7 @@ PORT = int(os.getenv("PORT", "8000"))
 app = FastAPI(
     title="Task Tracker API",
     description="A minimal REST API for tracking tasks.",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 # Module 3 (Prompt B4): the browser blocks fetch() from the frontend page to
@@ -66,8 +66,26 @@ def create_task(payload: TaskCreate) -> TaskResponse:
 def list_tasks(
     status: Optional[TaskStatus] = None,
     priority: Optional[TaskPriority] = None,
+    # Mid-course Feature 2: these three are additive. Every filter left out
+    # behaves exactly as before, and supplying several combines them with AND.
+    assignee: Optional[str] = None,
+    search: Optional[str] = Query(
+        default=None,
+        max_length=200,
+        description="Case-insensitive substring match on title and description.",
+    ),
+    overdue: Optional[bool] = Query(
+        default=None,
+        description="true = only overdue tasks, false = only tasks that are not overdue.",
+    ),
 ) -> list[TaskResponse]:
-    return storage.get_all_tasks(status=status, priority=priority)
+    return storage.get_all_tasks(
+        status=status,
+        priority=priority,
+        assignee=assignee,
+        search=search,
+        overdue=overdue,
+    )
 
 
 @app.get("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
