@@ -13,7 +13,87 @@ deployment — see [Limitations](#conventions-and-current-limitations).
 | Branch | Contents |
 |---|---|
 | `main` | The Modules 1–3 baseline: CRUD API, status-transition rules, Kanban board, 24 tests. |
-| `mid-course-project` | The baseline plus two features (below), 44 tests, and the Module 4 delivery layer. **This is the branch to review.** |
+| `mid-course-project` | The baseline plus two features (below), 44 tests, and the Module 4 delivery layer. |
+| `final-project` | The release check: verified baselines, CI, Docker, and the AI review and ownership evidence in `docs/`. **This is the branch to review.** |
+
+## Final Project
+
+Branch reviewed: `final-project`
+
+### What this submission demonstrates
+
+- The existing Task Tracker still runs inside the intended course scope — no
+  new product features, and `app/` and `frontend/` are unchanged on this branch.
+- CI runs the pytest suite on push and on pull requests to `main`.
+- The Docker image builds and runs, with `/health` returning 200 and the
+  container running as the non-root user `app`.
+- AI review, security and ownership evidence lives in `docs/`.
+
+### How to run locally
+
+```
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1          # Linux/macOS: source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements-dev.txt
+Copy-Item .env.example .env             # Linux/macOS: cp .env.example .env
+uvicorn app.main:app --reload --port 8000
+```
+
+Then, in a second terminal, for the board:
+
+```
+python -m http.server 5500 --bind 127.0.0.1
+```
+
+and open <http://localhost:5500/frontend/index.html>.
+
+### How to run tests
+
+```
+pytest -v
+```
+
+### How to run with Docker
+
+```
+docker build -t task-tracker:dev .
+```
+
+```
+docker run -d --name tt-dev -p 8000:8000 task-tracker:dev
+```
+
+```
+curl.exe http://127.0.0.1:8000/health
+```
+
+```
+docker exec tt-dev whoami
+```
+
+`whoami` must print `app`. Clean up with `docker rm -f tt-dev`.
+
+### Evidence files
+
+- [`docs/release-evidence.md`](docs/release-evidence.md) — baselines, CI,
+  Docker and the claim-vs-reality log.
+- [`docs/final-ai-review.md`](docs/final-ai-review.md) — AI code review and
+  security grading, the manual check, the rejected suggestion, and the
+  ownership statement.
+- [`docs/ai-playbook.md`](docs/ai-playbook.md) — my rules for working with AI.
+
+### AI assistance summary
+
+AI helped draft or review: CI, Docker, documentation, docstrings, the security
+review and the code review. I verified the work by running the test suite
+before and after every change, reading each diff, building and running the
+container, checking `/health` and `whoami`, exercising the documented endpoints
+against a live server, and doing my own manual scan of the repository
+configuration. One AI suggestion I rejected: a Medium-severity stored-XSS
+finding on two `innerHTML` lines in `frontend/index.html` that turned out to
+assign constant strings — every task-derived value already goes through
+`textContent`, so I graded it a false positive and changed nothing.
 
 ## Prerequisites
 
@@ -308,6 +388,11 @@ returned.
 
 ## Documentation
 
+- [`docs/release-evidence.md`](docs/release-evidence.md) — final project:
+  baselines, CI, Docker and the claim-vs-reality log.
+- [`docs/final-ai-review.md`](docs/final-ai-review.md) — final project: AI
+  review and security grading, manual check, and ownership statement.
+- [`docs/ai-playbook.md`](docs/ai-playbook.md) — my rules for working with AI.
 - [`docs/decisions/dockerfile-design.md`](docs/decisions/dockerfile-design.md) —
   technical note: why the container is built this way.
 - [`docs/decisions/comments-feature-plan.md`](docs/decisions/comments-feature-plan.md) —

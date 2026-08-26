@@ -1,8 +1,8 @@
 # My AI Coding Playbook
 
-Written after five modules on one repo. Every rule here comes from something
-that actually happened in `task-tracker`, not from what I think good practice
-sounds like.
+Written after five modules and the final release check on one repo. Every rule
+here comes from something that actually happened in `task-tracker`, not from
+what I think good practice sounds like.
 
 ## When I reach for AI first
 
@@ -10,7 +10,7 @@ sounds like.
   tests came back in one pass matching `conftest.py` with no rework, because I
   named the fixtures, the naming pattern and the behaviour each test had to
   pin. That would have taken most of an evening by hand.
-- **A second reading of code I already wrote.** The Module 5 audit found the
+- **A second reading of code I already wrote.** The security audit found the
   compound memory issue (unbounded field × unauthenticated write × unbounded
   store) that I had read past twice.
 - **Explaining someone else's decision back to me** — including my own from
@@ -27,6 +27,9 @@ sounds like.
   own snippet told me to run `git branch -M main` while I was standing on
   `mid-course-project`. Not a hallucination — correct generic advice, wrong for
   me, and that is the harder failure to see.
+- **When the question is "does this actually work?"** No amount of asking
+  replaces running it. `pytest -v` was in my README, and it had never worked
+  from a clean checkout.
 
 ## My non-negotiables
 
@@ -42,6 +45,10 @@ sounds like.
 4. **If I cannot explain a line, it does not get committed.** The
    `computed_field` version of `is_overdue` looked cleaner and would have 422'd
    every PATCH.
+5. **Protect the secret with a pattern, not with a filename.** `.gitignore`
+   listed `.env` and `.env.local`; `git check-ignore -v .env.production`
+   returned nothing. Nothing had leaked, because the only env file I ever made
+   happened to be spelled the way the rule expected.
 
 ## My review rules
 
@@ -56,6 +63,10 @@ sounds like.
 - **Verify the claim, not the conclusion.** When the audit said concurrent
   PATCHes can lose an update, I checked that the routes are `def` and not
   `async def` before believing it.
+- **Check a documented command by running it, not by reading it.** The two
+  real problems in the release check — the broken `pytest -v` and the
+  `.gitignore` gap — both came from executing something, and neither would have
+  survived to be found if I had trusted a careful re-read.
 - **Log the refusals.** Accepted suggestions show up in the diff on their own;
   rejected ones leave no trace anywhere except the prompt log.
 
@@ -69,6 +80,9 @@ sounds like.
   choosing not to see". `no authentication` sits on that line in every document
   I wrote this module.
 - Whether my prompt logs stay this detailed once nobody is grading them.
+- How much of my verification is habit and how much was the course watching. The
+  `pytest -v` bug sat in the README through two modules of "careful reading"
+  before a CI runner found it in forty seconds.
 
 ## Decision Card
 

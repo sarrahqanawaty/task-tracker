@@ -26,10 +26,17 @@ filters.
 Commands that actually work in this repo:
 
 ```
-python -m pytest -q                                          # 44 passed
-uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
-python -m http.server 5500 --bind 127.0.0.1                  # then open /frontend/index.html
+pytest -v                                       # 44 passed
+uvicorn app.main:app --reload --port 8000       # API on http://127.0.0.1:8000
+python -m http.server 5500 --bind 127.0.0.1     # then open /frontend/index.html
+docker build -t task-tracker:dev .
+docker run -d --name tt-dev -p 8000:8000 task-tracker:dev
 ```
+
+`pytest.ini` puts the repository root on `sys.path`; without it only
+`python -m pytest` works. `backend/main.py` re-exports the same app object, so
+`uvicorn backend.main:app` is equivalent locally — but `backend/` is not in the
+Docker image.
 
 `SQLite` is named in `README.md` as the intended persistence layer and
 `backend/data/` holds a `.gitkeep` for it, but **no database code exists** —
@@ -59,12 +66,20 @@ treat persistence as in-memory only.
   credentials.
 - **Authentication**: none. `README.md` lists it as intentionally out of scope.
 
-## 4. Module 5 guardrails
+## 4. Working guardrails
 
-- Docs-first: Module 5 output belongs in `docs/`.
-- Read-only by default. Do not modify `app/`, `backend/`, `frontend/` or
-  `tests/` during Module 5 unless I explicitly approve one specific minimal fix.
-- One bounded task per thread.
+- **Read first.** Inspect the relevant files before proposing anything, and
+  show me the diff before applying a file change.
+- **Docs-first.** Review, governance and evidence work belongs in `docs/`. That
+  is where the output of a review task goes, not into the source tree.
+- **Protect `app/` and `frontend/`.** Do not modify them, or `backend/` or
+  `tests/`, unless I explicitly approve one specific small change — a bug fix,
+  a security fix, or a documentation-supported correction. An unexpected edit
+  to those directories is a diff I reject, not a diff I read twice. Any change
+  that is made must be explained in `docs/final-ai-review.md`.
+- **No new product features.** Comments, authentication, a production database
+  and notifications are all out of scope. Say so instead of building them.
+- One bounded task at a time.
 - Cite the actual files you inspected when you make a claim about this repo.
 - If a file is not visible or a fact is not confirmed, say so instead of
   guessing. "Not confirmed" is an acceptable answer; an invented one is not.
@@ -79,11 +94,14 @@ treat persistence as in-memory only.
 - Do not invent security findings to fill a table. If a category is clean, say
   it is clean.
 - Do not weaken a test to make it pass. Fix the source or the example.
+- Do not add runtime dependencies. Test-only dependencies go in
+  `requirements-dev.txt`, never in `requirements.txt` — the Docker image
+  installs the runtime file and must not ship a test runner.
 
 ## Assumptions to verify
 
 - Python 3.14 is inferred from `README.md` and the `__pycache__` tags, not from
   a `python-requires` declaration — there is no `pyproject.toml` in the repo.
 - There is no `docker-compose` file in this repository. The `Dockerfile` and
-  `.github/workflows/ci.yml` are Module 4 artefacts; both are read-only for
-  Module 5 work.
+  `.github/workflows/ci.yml` exist and are verified; change them only with the
+  same read-first, show-me-the-diff rule as the rest of the repo.

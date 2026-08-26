@@ -10,8 +10,11 @@ env/
 ENV/
 
 # Environment variables
-.env
-.env.local
+# `.env` and `.env.local` only covered two spellings — `.env.production` and
+# `.env.staging` were not ignored. Match every .env* and re-include the
+# committed template explicitly.
+.env*
+!.env.example
 
 # Testing and coverage
 .pytest_cache/
