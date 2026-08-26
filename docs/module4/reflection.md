@@ -6,11 +6,11 @@
 |---|---|---|
 | Claude Code set up in the repo root | **Complete** | Working directory is `task-tracker/`; the repo answers about its own files were checked against `app/main.py` and `app/models.py`. |
 | `CLAUDE.md` corrected by hand, not left as the `/init` draft | **Complete** | [`CLAUDE.md`](../../CLAUDE.md) — the "What I changed from the generated draft" table lists five corrections, including the missing Python version. |
-| `CLAUDE.md` committed | **Missing** | The Module 4 files are still untracked. Nothing has been committed or pushed yet. |
+| `CLAUDE.md` committed | **Complete** | Committed in `a8eb84d` and pushed to `origin/mid-course-project`. |
 | Plan-mode practice on a change that was never made | **Complete** | The `GET /version` endpoint was planned and deliberately not implemented; it appears in no document as an existing route. |
 | CI workflow at the repo root | **Complete** | [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) — push to any branch, PR to `main`, Python pinned to 3.14, `pytest -v`. |
 | CI inspected for false-green patterns | **Complete** | Nine checks in [`ci-evidence.md`](ci-evidence.md): no `continue-on-error`, no `\|\| true`, no `--exit-zero`, no pipe around pytest. |
-| Green → red → green proof | **Partial** | Local sequence recorded with real output: `44 passed` → `assert 201 == 200`, exit 1 → `44 passed`, exit 0. On GitHub, run #1 went red on its own and caught a real bug — `pytest -v` could not import `app` from a clean checkout — fixed with `pytest.ini`. Runs #2–#4 pending. |
+| Green → red → green proof | **Complete** | Four runs on GitHub: #1 red (unplanned — caught that `pytest -v` could not import `app` from a clean checkout), #2 green after `pytest.ini`, #3 red from one flipped assertion, #4 green after the revert. Links and step lists in [`ci-evidence.md`](ci-evidence.md). |
 | `Dockerfile` and `.dockerignore` | **Complete** | Multi-stage on `python:3.14-slim`, non-root `app`, no secrets, no `--reload`. |
 | Container verified at runtime (`/health` + `whoami`) | **Complete** | [`docker-verification.md`](docker-verification.md) — build, run, `/health` 200, `whoami` -> `app` (uid 10001), `/app` holds only `app/`, no `.env`/`.git`/`tests` in the image, no pytest or httpx installed, health status `healthy`, image 251 MB. |
 | Docstrings added without changing logic | **Complete** | `git diff app/` → 291 insertions, 1 deletion, all docstrings; `pytest -v` → 44 passed. |
@@ -20,8 +20,13 @@
 | Technical note, linked from the README | **Complete** | [`dockerfile-design.md`](../decisions/dockerfile-design.md), linked from the README's Docker section. |
 | Tool-fit reflection | **Complete** | Below. |
 
-**Still to collect:** the three CI run links. That is blocked on a push, not on
-work I have skipped.
+**Nothing left to collect.** Every deliverable above points at a file, a
+command output, or a CI run.
+
+The one I did not plan is the one I would keep: run #1 went red on its own and
+caught a documented command that had never worked from a clean checkout. Nine
+line-by-line YAML checks found nothing wrong, because nothing was wrong with the
+YAML. The pipeline earned its place on its first attempt.
 
 ## Tool-fit reflection
 

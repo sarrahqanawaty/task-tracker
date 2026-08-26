@@ -140,9 +140,24 @@ The restore is verified by the empty diff, not by remembering that I undid it.
 
 ## The runs on GitHub
 
-| Run | SHA | Result | Link |
-|---|---|---|---|
-| #1 — unplanned red | `3ce0fc7` | **failure** — `pytest -v` could not import `app` | [runs/32980828271](https://github.com/sarrahqanawaty/task-tracker/actions/runs/32980828271) |
-| #2 — green | _pending_ | after `pytest.ini` | _pending_ |
-| #3 — intentional red | _pending_ | one broken assertion | _pending_ |
-| #4 — restored green | _pending_ | assertion restored | _pending_ |
+| Run | SHA | Result | What it proves | Link |
+|---|---|---|---|---|
+| #1 — unplanned red | `3ce0fc7` | **failure** | `pytest -v` could not import `app` from a clean checkout — a real bug in the README, not in the workflow | [runs/32980828271](https://github.com/sarrahqanawaty/task-tracker/actions/runs/32980828271) |
+| #2 — green | `d7695c6` | **success** | after `pytest.ini`, the documented command works on a machine that has never seen this project | [runs/32981262056](https://github.com/sarrahqanawaty/task-tracker/actions/runs/32981262056) |
+| #3 — intentional red | `bd6982b` | **failure** | one flipped assertion turns the check red; install stayed green, so the job reached the tests and failed on them | [runs/32981499078](https://github.com/sarrahqanawaty/task-tracker/actions/runs/32981499078) |
+| #4 — restored green | `eba1ae2` | **success** | the revert is complete — `git diff d7695c6 -- tests/` is empty, so the file is byte-identical to the last green state | [runs/32981688552](https://github.com/sarrahqanawaty/task-tracker/actions/runs/32981688552) |
+
+Run #3's step list is the part that matters:
+
+```
+2 Check out the repository   -> success
+3 Set up Python 3.14         -> success
+4 Install dependencies       -> success
+5 Run tests                  -> failure
+```
+
+Failing at step 5 with steps 1-4 green is what separates "CI runs the tests"
+from "CI fell over before reaching them". Run #1 has the same shape for a
+different reason, which is why it took a local reproduction to tell them apart.
+
+Runs after #4 are documentation commits on the same branch.
