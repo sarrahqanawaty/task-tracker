@@ -40,8 +40,10 @@ one line (the docstring it replaced).
 ## CI evidence
 
 - **Workflow file:** `.github/workflows/ci.yml`
-- **Latest run:** [run #6 — success](https://github.com/sarrahqanawaty/task-tracker/actions/runs/32992331463)
-  on `final-project`.
+- **Latest run:** [run #7 — success](https://github.com/sarrahqanawaty/task-tracker/actions/runs/32993493231)
+  on `final-project`, commit `06c6c4b` — the commit that carries this evidence
+  file. The [run history for the branch](https://github.com/sarrahqanawaty/task-tracker/actions?query=branch%3Afinal-project)
+  is green throughout; anything after #7 is a documentation-only commit.
 - **Test command used by CI:** `pytest -v`, as the last step of the `test` job.
 - **Dependency installation:** `python -m pip install --upgrade pip` then
   `pip install -r requirements-dev.txt`. The dev file is deliberate:
