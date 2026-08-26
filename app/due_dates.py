@@ -23,6 +23,9 @@ def today_utc() -> date:
 
     Isolated in its own function so tests can pass an explicit `today` instead
     of depending on the machine clock.
+
+    Returns:
+        date: The current UTC calendar date — not the machine's local date.
     """
     return datetime.now(timezone.utc).date()
 
@@ -38,6 +41,18 @@ def is_task_overdue(
     - No due date        -> never overdue (the field is optional).
     - Status is Done     -> never overdue, however old the due date is.
     - Due date == today  -> NOT overdue; the task still has the whole day.
+
+    Args:
+        due_date (date | None): The task's due date, or ``None``.
+        status (str): The task's status. Compared against the string
+            ``"Done"``; a ``TaskStatus`` member works because it is a ``str``
+            Enum.
+        today (date | None): The date to compare against. Defaults to
+            ``today_utc()`` when omitted, which is what production uses; tests
+            pass it explicitly.
+
+    Returns:
+        bool: ``True`` only when all three conditions hold.
     """
     if due_date is None:
         return False

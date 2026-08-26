@@ -1,0 +1,57 @@
+# Secrets and local configuration — must never enter the build context.
+.env
+.env.*
+!.env.example
+
+# Version control and CI
+.git
+.gitignore
+.github
+
+# Virtual environments
+.venv
+venv
+env
+ENV
+
+# Python caches and build artifacts
+__pycache__
+*.py[cod]
+*$py.class
+build
+dist
+*.egg-info
+
+# Test and tooling caches
+.pytest_cache
+.coverage
+.coverage.*
+htmlcov
+.tox
+.mypy_cache
+.ruff_cache
+
+# Not needed at runtime
+tests
+docs
+frontend
+backend
+requirements-dev.txt
+requirements.lock.txt
+README.md
+CLAUDE.md
+AGENTS.md
+Dockerfile
+.dockerignore
+submission.md
+submission.txt
+
+# Node, if it ever appears
+node_modules
+
+# Editors and OS
+.vscode
+.idea
+*.swp
+.DS_Store
+Thumbs.db
