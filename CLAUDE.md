@@ -38,6 +38,9 @@ binds to `0.0.0.0`.
 pytest -v
 ```
 
+`pytest.ini` puts the repository root on `sys.path` (`pythonpath = .`), which
+is what makes the bare command work — without it only `python -m pytest` does.
+
 Currently **44 passed** (24 from Modules 1–3 in `tests/test_tasks.py`, 20 from
 the mid-course project in `tests/test_midcourse.py`). Three
 `StarletteDeprecationWarning`s are expected and documented in

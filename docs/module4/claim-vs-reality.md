@@ -10,11 +10,13 @@ commands actually do, and what I changed.
 |---|---|---|---|---|
 | 1 | The old README listed under **Tech stack**: "SQLite (via Python's built-in `sqlite3`) for persistence — *not yet implemented*". | There is no `sqlite3` import, no connection, no schema and no query anywhere: `grep -rn "sqlite" app/ backend/ --include=*.py` returns nothing. `backend/data/` contains only `.gitkeep`. | Removed SQLite from the stack list. It is now stated once, under **Limitations**: tasks are in memory and `backend/data/` is *reserved* for a database file that does not exist. | The empty grep, and `ls backend/data/` showing only `.gitkeep`. |
 | 2 | The old README's setup step was `pip install -r requirements.txt`, and its Tests section said `python -m pytest -q` gives **44 passing**. | `requirements.txt` has exactly four lines — fastapi, uvicorn, pydantic, python-dotenv. Neither `pytest` nor `httpx` is in it, and `fastapi.testclient` imports httpx. A reader following the README from a clean checkout cannot run a single test. | Added `requirements-dev.txt` (`-r requirements.txt` plus `pytest==9.1.1` and `httpx==0.28.1`) and changed the README setup step to install it. CI installs the same file. | `grep -iE "pytest|httpx" requirements.txt` returns nothing. |
-| 3 | The old README named Python 3.14 only inside a paragraph about pinning, with no Prerequisites section. | The project genuinely requires 3.14 — the course materials say 3.11, which would be a different environment from the one every test result in `docs/` was recorded on. | Added a **Prerequisites** section naming Python 3.14, and pinned 3.14 in both `.github/workflows/ci.yml` and the `Dockerfile`. The 3.11-vs-3.14 divergence is recorded in `CLAUDE.md` §1. | `.venv/Scripts/python --version` → `Python 3.14.0`. |
+| 3 | Both `README.md` and `CLAUDE.md` documented the test command as `pytest -v`. | From a clean checkout that command failed at collection: `ModuleNotFoundError: No module named 'app'`. `python -m pytest` works and plain `pytest` did not, because only the `-m` form puts the current directory on `sys.path`, and `tests/` has no `__init__.py`. Every test result in `docs/` had been recorded with the working form. | Added `pytest.ini` with `pythonpath = .` and `testpaths = tests`. Both invocations now report `44 passed`; no test and no application code changed. | The first CI run, red on the `Run tests` step with install green: [runs/32980828271](https://github.com/sarrahqanawaty/task-tracker/actions/runs/32980828271). |
+| 4 | The old README named Python 3.14 only inside a paragraph about pinning, with no Prerequisites section. | The project genuinely requires 3.14 — the course materials say 3.11, which would be a different environment from the one every test result in `docs/` was recorded on. | Added a **Prerequisites** section naming Python 3.14, and pinned 3.14 in both `.github/workflows/ci.yml` and the `Dockerfile`. The 3.11-vs-3.14 divergence is recorded in `CLAUDE.md` §1. | `.venv/Scripts/python --version` → `Python 3.14.0`. |
 
-Numbers 1 and 2 are the two required corrections. Number 2 is the one that
-would have bitten someone: it is also exactly why the first CI run in the
-lecture went red.
+Numbers 1 and 2 are the two required corrections. Number 3 is the one I am
+keeping: I did not find it by reading, and I could not have. It took a machine
+that had never run this project before to notice that the command I had written
+down was not the command I had ever run.
 
 ## 2. Docstring spot-checks
 

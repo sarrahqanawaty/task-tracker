@@ -31,10 +31,72 @@ gets installed.** `requirements.txt` has no pytest and no httpx, so a workflow
 installing it would fail at collection with `ModuleNotFoundError` — a red run,
 but for the wrong reason. CI installs `requirements-dev.txt`.
 
-## Green → red → green (local)
+Nine checks passed, and the first run still failed. That is the part worth
+keeping.
 
-The test command in CI is the test command locally, so the proof that a failing
-test produces a non-zero exit code was run here first.
+## Run #1 — red, and I did not plan it
+
+```
+JOB test  ->  failure
+  1 Set up job                 -> success
+  2 Check out the repository   -> success
+  3 Set up Python 3.14         -> success
+  4 Install dependencies       -> success
+  5 Run tests                  -> failure
+```
+
+<https://github.com/sarrahqanawaty/task-tracker/actions/runs/32980828271>
+
+Install succeeded and `pytest -v` failed, on a suite that had just reported
+`44 passed` on my machine. Reproduced locally the moment I ran the command CI
+runs, instead of the one I always type:
+
+```
+$ .venv/Scripts/pytest -v
+ImportError while loading conftest 'tests\conftest.py'.
+tests\conftest.py:4: in <module>
+    from app.main import app
+E   ModuleNotFoundError: No module named 'app'
+```
+
+**Diagnosis.** `python -m pytest` puts the current directory on `sys.path`;
+plain `pytest` does not. `tests/` has no `__init__.py`, so pytest's prepend
+import mode inserts `tests/` and never the repository root, and
+`from app.main import app` in `conftest.py` cannot resolve. Every test result
+recorded in `docs/` was produced with `python -m pytest` — the form that hides
+the problem.
+
+**What it actually caught: a documentation lie.** `README.md` and `CLAUDE.md`
+both told a reader to run `pytest -v`. From a clean checkout that command did
+not work, and no amount of re-reading the README would have revealed it,
+because the README was checked against my shell, and my shell had the
+repository root on `sys.path` for an unrelated reason.
+
+**Fix.** `pytest.ini` at the repository root:
+
+```ini
+[pytest]
+pythonpath = .
+testpaths = tests
+```
+
+One file, no test changed, no application code changed. Both invocations now
+work:
+
+```
+$ .venv/Scripts/pytest -q          ->  44 passed
+$ .venv/Scripts/python -m pytest -q ->  44 passed
+```
+
+This is the module's whole argument in one run. I inspected the YAML line by
+line and found nothing, because nothing was wrong with the YAML — the workflow
+was correct and my environment was the thing that lied. A green first run would
+have shipped a README that does not work.
+
+## Green → red → green (local rehearsal)
+
+Run before pushing, so the intentional red run on GitHub would fail for the
+reason I chose rather than for a fourth reason I had not thought of.
 
 **1. Green**
 
@@ -76,13 +138,11 @@ $ git diff --stat tests/
 
 The restore is verified by the empty diff, not by remembering that I undid it.
 
-## Still to collect
+## The runs on GitHub
 
-The three GitHub Actions runs — green, intentional red, restored green — need a
-push to `origin/mid-course-project`. The local sequence above proves the test
-suite fails loudly and reversibly; it does not prove that GitHub runs it. That
-evidence goes here as three run links once the branch is pushed:
-
-- Green run: _pending push_
-- Intentional red run: _pending push_
-- Restored green run: _pending push_
+| Run | SHA | Result | Link |
+|---|---|---|---|
+| #1 — unplanned red | `3ce0fc7` | **failure** — `pytest -v` could not import `app` | [runs/32980828271](https://github.com/sarrahqanawaty/task-tracker/actions/runs/32980828271) |
+| #2 — green | _pending_ | after `pytest.ini` | _pending_ |
+| #3 — intentional red | _pending_ | one broken assertion | _pending_ |
+| #4 — restored green | _pending_ | assertion restored | _pending_ |

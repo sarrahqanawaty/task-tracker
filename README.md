@@ -128,6 +128,9 @@ messages.
 pytest -v
 ```
 
+`pytest.ini` puts the repository root on `sys.path`, so the bare command works
+from a clean checkout.
+
 **44 passing** — 24 from Modules 1–3 (`tests/test_tasks.py`) and 20 from the
 mid-course project (`tests/test_midcourse.py`). Three
 `StarletteDeprecationWarning`s are expected; they are triaged in
@@ -173,9 +176,8 @@ virtualenv and `app/`, then switches to the non-root user `app` before `CMD`.
 The container command is `uvicorn app.main:app`, with no `--reload`, bound to
 `0.0.0.0:8000`. `backend/` is **not** in the image, so the
 `uvicorn backend.main:app` alias works locally but not inside the container.
-Tests,
-docs, the frontend, `.env` and `.git` are excluded by `.dockerignore` and never
-enter the build context. The reasoning is in
+Tests, docs, the frontend, `.env` and `.git` are excluded by `.dockerignore`
+and never enter the build context. The reasoning is in
 [`docs/decisions/dockerfile-design.md`](docs/decisions/dockerfile-design.md).
 
 ## CI workflow
@@ -217,6 +219,7 @@ task-tracker/
 ├── .dockerignore
 ├── CLAUDE.md                  # Project memory for Claude Code
 ├── AGENTS.md                  # Repo-level instructions for coding agents
+├── pytest.ini                 # Test config: repo root on sys.path, testpaths
 ├── requirements.txt           # Runtime dependencies, pinned
 ├── requirements-dev.txt       # Runtime + test dependencies
 ├── requirements.lock.txt      # Full resolved tree from `pip freeze`

@@ -10,7 +10,7 @@
 | Plan-mode practice on a change that was never made | **Complete** | The `GET /version` endpoint was planned and deliberately not implemented; it appears in no document as an existing route. |
 | CI workflow at the repo root | **Complete** | [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) — push to any branch, PR to `main`, Python pinned to 3.14, `pytest -v`. |
 | CI inspected for false-green patterns | **Complete** | Nine checks in [`ci-evidence.md`](ci-evidence.md): no `continue-on-error`, no `\|\| true`, no `--exit-zero`, no pipe around pytest. |
-| Green → red → green proof | **Partial** | Local sequence recorded with real output: `44 passed` → `assert 201 == 200`, exit 1 → `44 passed`, exit 0. The three GitHub Actions runs still need a push. |
+| Green → red → green proof | **Partial** | Local sequence recorded with real output: `44 passed` → `assert 201 == 200`, exit 1 → `44 passed`, exit 0. On GitHub, run #1 went red on its own and caught a real bug — `pytest -v` could not import `app` from a clean checkout — fixed with `pytest.ini`. Runs #2–#4 pending. |
 | `Dockerfile` and `.dockerignore` | **Complete** | Multi-stage on `python:3.14-slim`, non-root `app`, no secrets, no `--reload`. |
 | Container verified at runtime (`/health` + `whoami`) | **Complete** | [`docker-verification.md`](docker-verification.md) — build, run, `/health` 200, `whoami` -> `app` (uid 10001), `/app` holds only `app/`, no `.env`/`.git`/`tests` in the image, no pytest or httpx installed, health status `healthy`, image 251 MB. |
 | Docstrings added without changing logic | **Complete** | `git diff app/` → 291 insertions, 1 deletion, all docstrings; `pytest -v` → 44 passed. |
